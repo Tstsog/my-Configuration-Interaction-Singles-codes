@@ -1,4 +1,22 @@
-%%%
+% This Matlab code computes the ground state energy for H2O atom by solving the Roothaan equation using the
+% STO-3G ([2s1p) (restricted Hartree-Fock (rhf) calculation).
+%
+% The code also performs the Configuration Interaction Singles (CIS) calculation.
+%
+% The core Hamiltonian matrix (H_core), overlap matrix (S_ov) and two-electron integrals (tei) (tei_h2o_sto_3g.txt) are computed 
+% by my own developing code. An obtained total energy is compared with
+% those of the Psi4 computational chemistry package
+% 
+% Ref: A. Szabo and N. S. Ostlund "Modern Quantum Chemistry" book 
+%
+% Ref: https://www.chem.fsu.edu/~deprince/programming_projects/cis/
+%
+%
+% Written by Tsogbayar Tsednee (PhD)
+% Email: tsog215@gmail.com
+%
+% June 11, 2024 & University of North Dakota 
+%
 %
 function [] = h2o_cis_rhf_sto_3g
 clc; 
@@ -7,19 +25,19 @@ format short
 %
 [En_total ,f, tei_mol] = h2o_rhf_sto3g;
 
-[En_total] % -74.965900481678958 (atomic unit, au), ground state energy
+[En_total] % -74.965900481678958 (atomic unit, au), ground state energy, -74.96466253910492 = Psi4
 %
 [f]; % = [                               
-    %-20.251556277131314    % orbital energy
+    %-20.251556277131314   (hole) % orbital energy
     % -1.257624813925194
     % -0.593933613384772
     % -0.459749506519034
     % -0.392624438360491
-    %  0.581943686802284
+    %  0.581943686802284 (virtual)
     %  0.692851608959985];
 %
 hole = [1, 2, 3, 4, 5];   % hole state
-virt = [6, 7];            % virtial (particle) state   
+virt = [6, 7];            % virtual (particle) state   
 %
 %
 dim1B = length(f);
@@ -34,27 +52,28 @@ for i = hole
         for j = hole 
             for b = virt 
                 JJ = JJ + 1;
-                A_singlet(II,JJ) = ((f(a) - f(i)) * (i==j) * (a==b)) + (2*tei_mol(i,a,b,j) - tei_mol(i,j,a,b)); % singlet singly excited states
-                A_triplet(II,JJ) = ((f(a) - f(i)) * (i==j) * (a==b)) + (0*tei_mol(i,a,j,b) - tei_mol(i,j,a,b)); % triplet singly excited states
+                A_singlet(II,JJ) = ((f(a) - f(i)) * (i==j) * (a==b)) + (2*tei_mol(i,a,j,b) - tei_mol(i,j,a,b)); % singlet singly excited states
+                A_triplet(II,JJ) = ((f(a) - f(i)) * (i==j) * (a==b)) + (- tei_mol(i,j,a,b));                    % triplet singly excited states
 %
 %                B(II,JJ) = tei_data(a,b,i,j);
             end
         end
     end
 end
+%
 %%%
 one_au = 27.211324570273;% eV
 %
-[eig(A_singlet), eig(A_singlet) * one_au]; % CIS singlet excitaion energies in (au), (eV)
+[eig(A_singlet), eig(A_singlet) * one_au];  % CIS singlet excitaion energies in (au), (eV)
 %
 1.0e+02 *[  
-   0.200866949787128   5.465855766098269
-   0.201306908906967   5.477827636505857
-   0.010183403834917   0.277103906982081
-   0.014425005604119   0.392523509421686
+   0.200866949787128   5.465855766098270     % 546.2610 from Psi4 calculation 
+   0.201306908906967   5.477827636505851     % 547.5405 
+   0.014425005604119   0.392523509421685
+   0.010183403834917   0.277103906982082
    0.006049171710963   0.164605974808331
    0.014582104106088   0.396798367748276
-   0.004590036449483   0.124900971616276
+   0.004590036449483   0.124900971616277
    0.005152251084047   0.140199576515549
    0.007665618424153   0.208591630971489
    0.006722278401474   0.182922099434239]; %  
@@ -62,16 +81,19 @@ one_au = 27.211324570273;% eV
 [eig(A_triplet), eig(A_triplet) * one_au]; % CIS triplet excitaion energies in (au), (eV)
 
 1.0e+02 * [
-   0.200260539145265   5.449354529299660
-   0.200896615895569   5.466663020203799
-   0.012438451133452   0.338466730943852
-   0.006840949516749   0.186151297669107
-   0.013437335146605   0.365647688033810
-   0.004694586860706   0.127745926790006
+   0.200260539145265   5.449354529299660    % 544.6446 from Psi4 calculation 
+   0.200896615895569   5.466663020203799    % 546.4043
+   0.012438451133452   0.338466730943852    % 33.3058 
+   0.006840949516749   0.186151297669107    % 18.6702
+   0.013437335146605   0.365647688033810    % 36.3069
+   0.004694586860706   0.127745926790006    % 12.1070
    0.003838438423941   0.104448993796863
    0.004668813546587   0.127044600774279
    0.006269423429664   0.170599315813060
    0.005207567681806   0.141704814411292];
+%
+%%%
+[En_total + sort(eig(A_singlet)), En_total + sort(eig(A_triplet))] ;
 
 %%%
 return
